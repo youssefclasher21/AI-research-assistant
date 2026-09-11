@@ -39,8 +39,9 @@ def build_ui() -> gr.Blocks:
     with gr.Blocks(title="AI Research Assistant") as demo:
         gr.Markdown(
             "## AI Research Assistant\n"
-            "Send a message. Ollama decides whether to call `search_web`. "
-            "There are no per-tool buttons."
+            "Send a message. Ollama decides which tools to call "
+            "(`search_web`, `scrape_page`, `summarize_source`, `compare_sources`, "
+            "`generate_report`). There are no per-tool buttons."
         )
         chatbot = gr.Chatbot(label="Conversation")
         trace = gr.Markdown(value="_Tool trace will appear here._", label="Tool trace")

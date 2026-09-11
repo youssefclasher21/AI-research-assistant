@@ -21,7 +21,14 @@ def _message_to_dict(message: Any) -> dict[str, Any]:
         }
         if getattr(message, "tool_calls", None):
             data["tool_calls"] = message.tool_calls
-    return data
+    cleaned: dict[str, Any] = {
+        "role": data.get("role") or "assistant",
+        "content": data.get("content") or "",
+    }
+    tool_calls = data.get("tool_calls")
+    if tool_calls:
+        cleaned["tool_calls"] = tool_calls
+    return cleaned
 
 
 def _parse_arguments(raw: Any) -> dict[str, Any]:
@@ -36,7 +43,7 @@ def _parse_arguments(raw: Any) -> dict[str, Any]:
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError:
-            return {"query": raw}
+            return {}
         return parsed if isinstance(parsed, dict) else {}
     return {}
 
@@ -46,12 +53,18 @@ class OllamaClient(LLMClient):
         self._settings = settings
         self._client = Client(host=settings.ollama_host)
 
-    def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> ChatResult:
+    def chat(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        format: str | None = None,
+    ) -> ChatResult:
         response = self._client.chat(
             model=self._settings.ollama_model,
             messages=messages,
             tools=tools or None,
             think=False,
+            format=format or None,
         )
         message = response.message
         tool_calls: list[ToolCall] = []

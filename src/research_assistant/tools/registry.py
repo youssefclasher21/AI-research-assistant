@@ -70,10 +70,16 @@ class ToolRegistry:
 
 
 def build_default_registry() -> ToolRegistry:
+    from research_assistant.tools.compare_sources import COMPARE_SOURCES_SPEC
+    from research_assistant.tools.generate_report import GENERATE_REPORT_SPEC
     from research_assistant.tools.scrape_page import SCRAPE_PAGE_SPEC
     from research_assistant.tools.search_web import SEARCH_WEB_SPEC
+    from research_assistant.tools.summarize_source import SUMMARIZE_SOURCE_SPEC
 
     registry = ToolRegistry()
     registry.register(SEARCH_WEB_SPEC)
     registry.register(SCRAPE_PAGE_SPEC)
+    registry.register(SUMMARIZE_SOURCE_SPEC)
+    registry.register(COMPARE_SOURCES_SPEC)
+    registry.register(GENERATE_REPORT_SPEC)
     return registry

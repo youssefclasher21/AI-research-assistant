@@ -12,6 +12,60 @@ from research_assistant.reliability.validation import validate_user_input
 from research_assistant.tools.registry import ToolRegistry, build_default_registry
 
 
+def _compact_tool_result(result: dict[str, Any], max_chars: int) -> dict[str, Any]:
+    encoded = json.dumps(result, ensure_ascii=False)
+    if len(encoded) <= max_chars:
+        return result
+    compact = json.loads(encoded)
+    data = compact.get("data")
+    if isinstance(data, dict) and isinstance(data.get("text"), str):
+        keep = max(500, max_chars - 800)
+        data["text"] = data["text"][:keep]
+        data["truncated_for_context"] = True
+        compact["data"] = data
+    encoded = json.dumps(compact, ensure_ascii=False)
+    if len(encoded) > max_chars:
+        return {
+            "ok": compact.get("ok"),
+            "error": compact.get("error"),
+            "summary": compact.get("summary"),
+            "title": compact.get("title"),
+            "data": "Tool result truncated to fit the model context window.",
+        }
+    return compact
+
+
+def _reply_from_report(result: dict[str, Any]) -> str:
+    title = result.get("title") or "Research report"
+    introduction = result.get("introduction") or ""
+    findings = result.get("key_findings") or []
+    conclusion = result.get("conclusion") or ""
+    sources = result.get("sources") or []
+    lines = [f"# {title}", "", "## Introduction", introduction, "", "## Key Findings"]
+    if isinstance(findings, list):
+        for item in findings:
+            lines.append(f"- {item}")
+    else:
+        lines.append(str(findings))
+    lines.extend(["", "## Conclusion", conclusion, "", "## Sources"])
+    if isinstance(sources, list):
+        for src in sources:
+            if isinstance(src, dict):
+                label = src.get("title") or "Source"
+                url = src.get("url") or ""
+                lines.append(f"- {label}{f' ({url})' if url else ''}")
+            else:
+                lines.append(f"- {src}")
+    return "\n".join(lines).strip()
+
+
+def _latest_report_reply(traces: list[ToolTrace]) -> str | None:
+    for trace in reversed(traces):
+        if trace.name == "generate_report" and trace.result.get("ok"):
+            return _reply_from_report(trace.result)
+    return None
+
+
 @dataclass
 class ToolTrace:
     name: str
@@ -45,6 +99,20 @@ class AgentResult:
                     title = data.get("title") or "(no title)"
                     lines.append(f"   - title: {title}")
                     lines.append(f"   - characters: {data.get('char_count')}{extra}")
+                elif isinstance(data, dict) and "summary" in data:
+                    points = data.get("key_points") or []
+                    lines.append(f"   - summary chars: {len(data.get('summary') or '')}")
+                    lines.append(f"   - key points: {len(points) if isinstance(points, list) else 0}")
+                elif isinstance(data, dict) and (
+                    "similarities" in data or "differences" in data or "key_takeaways" in data
+                ):
+                    lines.append(f"   - similarities: {len(data.get('similarities') or [])}")
+                    lines.append(f"   - differences: {len(data.get('differences') or [])}")
+                    lines.append(f"   - takeaways: {len(data.get('key_takeaways') or [])}")
+                elif isinstance(data, dict) and "key_findings" in data:
+                    findings = data.get("key_findings") or []
+                    lines.append(f"   - report: {data.get('title') or '(untitled)'}")
+                    lines.append(f"   - findings: {len(findings) if isinstance(findings, list) else 0}")
                 else:
                     lines.append("   - results: n/a")
             else:
@@ -93,30 +161,38 @@ class AgentOrchestrator:
                 if result.tool_calls:
                     messages.append(result.message)
                     for call in result.tool_calls:
-                        tool_result = self.registry.execute(call.name, call.arguments)
+                        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+                        tool_result = self.registry.execute(call.name, arguments)
                         traces.append(
                             ToolTrace(
                                 name=call.name,
-                                arguments=call.arguments,
+                                arguments=arguments,
                                 result=tool_result,
                             )
+                        )
+                        compact = _compact_tool_result(
+                            tool_result, self.settings.max_tool_result_chars
                         )
                         messages.append(
                             {
                                 "role": "tool",
                                 "tool_name": call.name,
-                                "content": json.dumps(tool_result, ensure_ascii=False),
+                                "content": json.dumps(compact, ensure_ascii=False),
                             }
                         )
                     continue
 
                 reply = (result.content or "").strip()
                 if not reply:
-                    reply = "I did not produce a response. Please try again."
+                    reply = _latest_report_reply(traces) or (
+                        "I did not produce a response. Please try again."
+                    )
                 return AgentResult(reply=reply, traces=traces)
 
+            report_reply = _latest_report_reply(traces)
             return AgentResult(
-                reply="Stopped after the maximum number of tool steps. Please try a simpler question.",
+                reply=report_reply
+                or "Stopped after the maximum number of tool steps. Please try a simpler question.",
                 traces=traces,
             )
         except Exception as exc:

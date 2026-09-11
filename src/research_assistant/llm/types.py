@@ -18,5 +18,10 @@ class ChatResult:
 class LLMClient:
     """Minimal chat interface used by the orchestrator (real or mocked)."""
 
-    def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> ChatResult:
+    def chat(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        format: str | None = None,
+    ) -> ChatResult:
         raise NotImplementedError
