@@ -60,7 +60,22 @@ The project extends a general AI research assistant into a specialized neuroscie
   - Retrieve relevant neuroscience information using RAG
 
 ---
+# Supported LLM Backends
 
+The assistant supports multiple LLM providers through a unified interface.
+
+## Ollama (Default)
+
+The primary backend for the project.
+
+Example configuration:
+
+```env
+LLM_PROVIDER=ollama
+
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen3:8b
+-----
 # Advanced AI Concept: Retrieval-Augmented Generation (RAG)
 
 The project integrates RAG to improve reliability.
