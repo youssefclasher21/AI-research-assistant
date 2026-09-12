@@ -36,29 +36,61 @@ def respond(message: str, history: list | None):
 
 
 def build_ui() -> gr.Blocks:
-    with gr.Blocks(title="AI Research Assistant") as demo:
+    with gr.Blocks(title="NeuroResearch Assistant") as demo:
         gr.Markdown(
-            "## AI Research Assistant\n"
-            "Send a message. Ollama decides which tools to call "
-            "(`search_web`, `scrape_page`, `summarize_source`, `compare_sources`, "
-            "`generate_report`). There are no per-tool buttons."
+            "## NeuroResearch Assistant 🧠\n"
+            "AI-powered neuroscience research assistant using "
+            "Ollama, Tool Calling, and RAG.\n\n"
+            "The model automatically selects tools when needed:\n"
+            "- brain_knowledge\n"
+            "- retrieve_neuroscience_context\n"
+            "- search_pubmed\n"
+            "- read_research_paper\n"
+            "- generate_citation\n"
+            "- web research tools"
         )
+
         chatbot = gr.Chatbot(label="Conversation")
-        trace = gr.Markdown(value="_Tool trace will appear here._", label="Tool trace")
+
+        trace = gr.Markdown(
+            value="_Tools used will appear here._",
+            label="Agent Tool Trace"
+        )
+
         with gr.Row():
             box = gr.Textbox(
                 label="Research topic or question",
-                placeholder="e.g. What is Ollama tool calling?",
+                placeholder=(
+                    "e.g. Explain hippocampus and find "
+                    "Alzheimer's research"
+                ),
                 scale=4,
             )
-            send = gr.Button("Send", variant="primary", scale=1)
 
-        send.click(respond, inputs=[box, chatbot], outputs=[chatbot, trace]).then(
-            lambda: "", outputs=box
+            send = gr.Button(
+                "Send",
+                variant="primary",
+                scale=1,
+            )
+
+        send.click(
+            respond,
+            inputs=[box, chatbot],
+            outputs=[chatbot, trace]
+        ).then(
+            lambda: "",
+            outputs=box
         )
-        box.submit(respond, inputs=[box, chatbot], outputs=[chatbot, trace]).then(
-            lambda: "", outputs=box
+
+        box.submit(
+            respond,
+            inputs=[box, chatbot],
+            outputs=[chatbot, trace]
+        ).then(
+            lambda: "",
+            outputs=box
         )
+
     return demo
 
 
