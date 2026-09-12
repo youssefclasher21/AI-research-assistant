@@ -43,13 +43,16 @@ class ToolRegistry:
                 "data": None,
                 "error": f"Unknown tool: {name}",
             }
+
         args = arguments or {}
+
         if not isinstance(args, dict):
             return {
                 "ok": False,
                 "data": None,
                 "error": "Tool arguments must be an object.",
             }
+
         try:
             result = spec.handler(**args)
         except TypeError as exc:
@@ -64,8 +67,10 @@ class ToolRegistry:
                 "data": None,
                 "error": f"{name} failed: {exc}",
             }
+
         if not isinstance(result, dict) or "ok" not in result:
             return {"ok": True, "data": result, "error": None}
+
         return result
 
 
@@ -76,10 +81,24 @@ def build_default_registry() -> ToolRegistry:
     from research_assistant.tools.search_web import SEARCH_WEB_SPEC
     from research_assistant.tools.summarize_source import SUMMARIZE_SOURCE_SPEC
 
+    from research_assistant.tools.neuroscience.brain_knowledge import BRAIN_KNOWLEDGE_SPEC
+    from research_assistant.tools.neuroscience.citation_generator import CITATION_GENERATOR_SPEC
+    from research_assistant.tools.neuroscience.paper_reader import PAPER_READER_SPEC
+    from research_assistant.tools.neuroscience.pubmed_search import PUBMED_SEARCH_SPEC
+    from research_assistant.tools.neuroscience.rag_retriever import RAG_RETRIEVER_SPEC
+
     registry = ToolRegistry()
+
     registry.register(SEARCH_WEB_SPEC)
     registry.register(SCRAPE_PAGE_SPEC)
     registry.register(SUMMARIZE_SOURCE_SPEC)
     registry.register(COMPARE_SOURCES_SPEC)
     registry.register(GENERATE_REPORT_SPEC)
+
+    registry.register(BRAIN_KNOWLEDGE_SPEC)
+    registry.register(CITATION_GENERATOR_SPEC)
+    registry.register(PAPER_READER_SPEC)
+    registry.register(PUBMED_SEARCH_SPEC)
+    registry.register(RAG_RETRIEVER_SPEC)
+
     return registry
