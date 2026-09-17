@@ -110,9 +110,11 @@ def explain_brain_concept(topic: str) -> dict[str, Any]:
 BRAIN_KNOWLEDGE_SPEC = ToolSpec(
     name="brain_knowledge",
     description=(
-        "Provides explanations about neuroscience concepts, "
-        "brain regions, neurotransmitters, and related disorders. "
-        "Use this tool for basic neuroscience knowledge."
+"Simple predefined lookup for a small fixed set of neuroscience concepts. "
+"Use this tool ONLY for a basic direct lookup when the concept is explicitly "
+"covered by the local predefined dictionary. Do NOT use it for broad, "
+"detailed, semantic, evidence-grounded, or knowledge-retrieval questions. "
+"For those questions, use retrieve_neuroscience_context instead."
     ),
     parameters={
         "type": "object",
